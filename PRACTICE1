@@ -1,0 +1,84 @@
+import express from "express";
+import mongoose from "mongoose";
+import cors from "cors";
+
+const app = express();
+
+// Middleware
+app.use(express.json());
+app.use(cors());
+
+// ✅ Replace with your MongoDB Atlas connection string
+// Example: "mongodb+srv://<username>:<password>@cluster0.mongodb.net/productdb"
+const MONGO_URL = "mongodb://127.0.0.1:27017/productdb";
+
+// MongoDB connection
+mongoose.connect(MONGO_URL, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log("✅ MongoDB Connected"))
+.catch((err) => console.log("❌ DB Connection Error: ", err));
+
+// Product Schema & Model
+const productSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  price: { type: Number, required: true },
+  category: { type: String, required: true }
+});
+
+const Product = mongoose.model("Product", productSchema);
+
+// ====================== CRUD Routes ====================== //
+
+// ✅ GET all products
+app.get("/products", async (req, res) => {
+  try {
+    const products = await Product.find();
+    res.status(200).json(products);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ✅ POST add new product
+app.post("/products", async (req, res) => {
+  try {
+    const { name, price, category } = req.body;
+    const newProduct = new Product({ name, price, category });
+    await newProduct.save();
+    res.status(201).json(newProduct);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ✅ PUT update product by ID
+app.put("/products/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedProduct = await Product.findByIdAndUpdate(id, req.body, { new: true });
+    if (!updatedProduct) return res.status(404).json({ message: "Product not found" });
+    res.status(200).json(updatedProduct);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ✅ DELETE product by ID
+app.delete("/products/:id", async (req, res) => {
+  try {
+    const deletedProduct = await Product.findByIdAndDelete(req.params.id);
+    if (!deletedProduct) return res.status(404).json({ message: "Product not found" });
+    res.status(200).json({ message: "Product deleted", product: deletedProduct });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ========================================================== //
+
+const PORT = 3000;
+app.listen(PORT, () => {
+  console.log(🚀 Server running on http://localhost:${PORT});
+});
