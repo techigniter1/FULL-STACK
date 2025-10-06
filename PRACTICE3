@@ -1,0 +1,111 @@
+import express from "express";
+import mongoose from "mongoose";
+
+const app = express();
+app.use(express.json());
+
+// ✅ Replace with your MongoDB URI
+const MONGO_URL = "mongodb://127.0.0.1:27017/ecommerceDB";
+
+mongoose.connect(MONGO_URL, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log("✅ MongoDB Connected"))
+.catch((err) => console.log("❌ DB Connection Error:", err));
+
+// ================== Schema with Nested Documents ================== //
+const variantSchema = new mongoose.Schema({
+  color: String,
+  size: String,
+  stock: Number
+});
+
+const productSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  price: Number,
+  category: String,
+  variants: [variantSchema]   // ✅ Array of nested documents
+});
+
+const Product = mongoose.model("Product", productSchema);
+
+// ================== Routes ================== //
+
+// Insert sample products
+app.post("/insert-sample", async (req, res) => {
+  try {
+    const sampleProducts = [
+      {
+        name: "T-Shirt",
+        price: 20,
+        category: "Clothing",
+        variants: [
+          { color: "Red", size: "M", stock: 10 },
+          { color: "Blue", size: "L", stock: 5 }
+        ]
+      },
+      {
+        name: "Sneakers",
+        price: 50,
+        category: "Footwear",
+        variants: [
+          { color: "White", size: "9", stock: 15 },
+          { color: "Black", size: "10", stock: 7 }
+        ]
+      },
+      {
+        name: "Laptop",
+        price: 1200,
+        category: "Electronics",
+        variants: [
+          { color: "Silver", size: "15-inch", stock: 3 },
+          { color: "Gray", size: "13-inch", stock: 2 }
+        ]
+      }
+    ];
+
+    await Product.insertMany(sampleProducts);
+    res.status(201).json({ message: "Sample products inserted" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ✅ Get all products
+app.get("/products", async (req, res) => {
+  try {
+    const products = await Product.find();
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ✅ Filter products by category
+app.get("/products/category/:category", async (req, res) => {
+  try {
+    const products = await Product.find({ category: req.params.category });
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ✅ Project only variant details
+app.get("/products/:id/variants", async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id).select("variants");
+    if (!product) return res.status(404).json({ message: "Product not found" });
+    res.json(product.variants);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ========================================================== //
+
+const PORT = 3000;
+app.listen(PORT, () => {
+  console.log(🚀 Server running on http://localhost:${PORT});
+});
