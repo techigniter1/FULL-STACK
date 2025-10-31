@@ -1,0 +1,186 @@
+Create React App
+npx create-react-app redux-cart
+cd redux-cart
+npm install @reduxjs/toolkit react-redux
+
+📁 Folder Structure
+redux-cart/
+ ┣ src/
+ ┃ ┣ app/
+ ┃ ┃ ┗ store.js
+ ┃ ┣ features/
+ ┃ ┃ ┗ cartSlice.js
+ ┃ ┣ components/
+ ┃ ┃ ┣ ProductList.js
+ ┃ ┃ ┗ Cart.js
+ ┃ ┗ App.js
+
+🧠 1. Configure Redux Store (src/app/store.js)
+import { configureStore } from '@reduxjs/toolkit';
+import cartReducer from '../features/cartSlice';
+
+export const store = configureStore({
+  reducer: {
+    cart: cartReducer,
+  },
+});
+
+🛒 2. Create Cart Slice (src/features/cartSlice.js)
+import { createSlice } from '@reduxjs/toolkit';
+
+const cartSlice = createSlice({
+  name: 'cart',
+  initialState: {
+    items: [],
+  },
+  reducers: {
+    addToCart: (state, action) => {
+      const existingItem = state.items.find(i => i.id === action.payload.id);
+      if (existingItem) {
+        existingItem.quantity += 1;
+      } else {
+        state.items.push({ ...action.payload, quantity: 1 });
+      }
+    },
+    removeFromCart: (state, action) => {
+      state.items = state.items.filter(i => i.id !== action.payload);
+    },
+    updateQuantity: (state, action) => {
+      const item = state.items.find(i => i.id === action.payload.id);
+      if (item) item.quantity = action.payload.quantity;
+    },
+  },
+});
+
+export const { addToCart, removeFromCart, updateQuantity } = cartSlice.actions;
+export default cartSlice.reducer;
+
+🧾 3. Product List Component (src/components/ProductList.js)
+import React from 'react';
+import { useDispatch } from 'react-redux';
+import { addToCart } from '../features/cartSlice';
+
+const products = [
+  { id: 1, name: 'Laptop', price: 55000 },
+  { id: 2, name: 'Headphones', price: 2500 },
+  { id: 3, name: 'Keyboard', price: 1500 },
+  { id: 4, name: 'Mouse', price: 1200 },
+];
+
+function ProductList() {
+  const dispatch = useDispatch();
+
+  return (
+    <div>
+      <h2>🛍 Product List</h2>
+      <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+        {products.map(p => (
+          <div key={p.id} style={{
+            border: '1px solid #ccc',
+            padding: '15px',
+            borderRadius: '8px',
+            width: '200px',
+            textAlign: 'center'
+          }}>
+            <h3>{p.name}</h3>
+            <p>💰 ₹{p.price}</p>
+            <button onClick={() => dispatch(addToCart(p))}>
+              Add to Cart
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default ProductList;
+
+🛍 4. Cart Component (src/components/Cart.js)
+import React from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { removeFromCart, updateQuantity } from '../features/cartSlice';
+
+function Cart() {
+  const cartItems = useSelector(state => state.cart.items);
+  const dispatch = useDispatch();
+
+  return (
+    <div style={{ marginTop: '40px' }}>
+      <h2>🛒 Shopping Cart</h2>
+      {cartItems.length === 0 ? (
+        <p>No items in cart.</p>
+      ) : (
+        <table border="1" cellPadding="10">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Price (₹)</th>
+              <th>Quantity</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {cartItems.map(item => (
+              <tr key={item.id}>
+                <td>{item.name}</td>
+                <td>{item.price}</td>
+                <td>
+                  <input
+                    type="number"
+                    value={item.quantity}
+                    min="1"
+                    onChange={(e) =>
+                      dispatch(updateQuantity({ id: item.id, quantity: Number(e.target.value) }))
+                    }
+                  />
+                </td>
+                <td>
+                  <button onClick={() => dispatch(removeFromCart(item.id))}>
+                    Remove
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
+export default Cart;
+
+⚛️ 5. Main App Component (src/App.js)
+import React from 'react';
+import ProductList from './components/ProductList';
+import Cart from './components/Cart';
+
+function App() {
+  return (
+    <div style={{ padding: '40px' }}>
+      <h1>🧾 Redux Shopping Cart</h1>
+      <ProductList />
+      <Cart />
+    </div>
+  );
+}
+
+export default App;
+
+🏗️ 6. Connect Redux to React (src/index.js)
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import { Provider } from 'react-redux';
+import { store } from './app/store';
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <Provider store={store}>
+    <App />
+  </Provider>
+);
+
+🚀 Run App
+npm start
