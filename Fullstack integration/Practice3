@@ -1,0 +1,166 @@
+Folder: chat-backend
+mkdir chat-backend
+cd chat-backend
+npm init -y
+npm install express socket.io cors
+
+Create server.js
+const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
+const cors = require("cors");
+
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST"],
+  },
+});
+
+app.use(cors());
+
+let users = {};
+
+io.on("connection", (socket) => {
+  console.log(`🔌 User connected: ${socket.id}`);
+
+  // When a user joins
+  socket.on("join", (username) => {
+    users[socket.id] = username;
+    io.emit("chat_message", { user: "System", message: `${username} joined the chat 💬` });
+  });
+
+  // When a user sends a message
+  socket.on("send_message", (data) => {
+    io.emit("chat_message", data);
+  });
+
+  // When a user disconnects
+  socket.on("disconnect", () => {
+    const username = users[socket.id];
+    if (username) {
+      io.emit("chat_message", { user: "System", message: `${username} left the chat ❌` });
+      delete users[socket.id];
+    }
+    console.log(`❌ User disconnected: ${socket.id}`);
+  });
+});
+
+const PORT = 5000;
+server.listen(PORT, () => console.log(`✅ Server running on http://localhost:${PORT}`));
+
+
+✅ Run it:
+
+node server.js
+
+⚛️ Frontend (React + Socket.io Client)
+📁 Folder: chat-frontend
+npx create-react-app chat-frontend
+cd chat-frontend
+npm install socket.io-client
+
+🧠 Edit src/App.js
+import React, { useEffect, useState } from "react";
+import io from "socket.io-client";
+
+const socket = io("http://localhost:5000");
+
+function App() {
+  const [username, setUsername] = useState("");
+  const [joined, setJoined] = useState(false);
+  const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState([]);
+
+  useEffect(() => {
+    socket.on("chat_message", (data) => {
+      setMessages((prev) => [...prev, data]);
+    });
+    return () => socket.disconnect();
+  }, []);
+
+  const handleJoin = () => {
+    if (username.trim()) {
+      socket.emit("join", username);
+      setJoined(true);
+    }
+  };
+
+  const sendMessage = () => {
+    if (message.trim()) {
+      socket.emit("send_message", { user: username, message });
+      setMessage("");
+    }
+  };
+
+  return (
+    <div style={{ padding: "30px", textAlign: "center", fontFamily: "Arial" }}>
+      {!joined ? (
+        <div>
+          <h2>💬 Join the Chat Room</h2>
+          <input
+            type="text"
+            placeholder="Enter your name"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            style={{ padding: "10px", width: "250px" }}
+          />
+          <button onClick={handleJoin} style={{ marginLeft: "10px", padding: "10px 20px" }}>
+            Join
+          </button>
+        </div>
+      ) : (
+        <div>
+          <h2>👋 Welcome, {username}!</h2>
+          <div
+            style={{
+              border: "1px solid #ccc",
+              borderRadius: "10px",
+              padding: "10px",
+              height: "300px",
+              width: "400px",
+              margin: "20px auto",
+              overflowY: "auto",
+              backgroundColor: "#f9f9f9",
+              textAlign: "left",
+            }}
+          >
+            {messages.map((msg, i) => (
+              <p key={i}>
+                <strong>{msg.user}:</strong> {msg.message}
+              </p>
+            ))}
+          </div>
+
+          <input
+            type="text"
+            placeholder="Type a message..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            style={{ padding: "10px", width: "300px" }}
+          />
+          <button onClick={sendMessage} style={{ marginLeft: "10px", padding: "10px 20px" }}>
+            Send
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default App;
+
+🧾 How to Run
+
+1️⃣ Start backend:
+
+cd chat-backend
+node server.js
+
+
+2️⃣ Start frontend:
+
+cd chat-frontend
+npm start
