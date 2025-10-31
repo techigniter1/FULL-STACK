@@ -1,0 +1,116 @@
+Folder: backend
+mkdir backend
+cd backend
+npm init -y
+npm install express cors
+
+Create server.js
+const express = require('express');
+const cors = require('cors');
+const app = express();
+const PORT = 5000;
+
+// Enable CORS so React can access the API
+app.use(cors());
+
+// Sample product data
+const products = [
+  { id: 1, name: 'Laptop', price: 55000 },
+  { id: 2, name: 'Headphones', price: 2500 },
+  { id: 3, name: 'Keyboard', price: 1500 },
+  { id: 4, name: 'Mouse', price: 1200 }
+];
+
+// Route to return products
+app.get('/api/products', (req, res) => {
+  res.json(products);
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`✅ Server running at http://localhost:${PORT}`);
+});
+
+
+🟢 Run it:
+
+node server.js
+
+
+✅ You should see: Server running at http://localhost:5000
+
+⚛️ Frontend (React App)
+📁 Folder: frontend
+npx create-react-app frontend
+cd frontend
+npm install axios
+
+Edit src/App.js
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+
+function App() {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    axios.get('http://localhost:5000/api/products')
+      .then((response) => {
+        setProducts(response.data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError('Error fetching products');
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) return <h2>Loading...</h2>;
+  if (error) return <h3 style={{ color: 'red' }}>{error}</h3>;
+
+  return (
+    <div style={{ textAlign: 'center', marginTop: '50px' }}>
+      <h1>🛍 Product List</h1>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        gap: '20px',
+        flexWrap: 'wrap',
+        marginTop: '20px'
+      }}>
+        {products.map((p) => (
+          <div key={p.id} style={{
+            border: '1px solid #ccc',
+            padding: '15px',
+            borderRadius: '8px',
+            width: '200px',
+            backgroundColor: '#f9f9f9',
+            boxShadow: '0px 2px 5px rgba(0,0,0,0.1)'
+          }}>
+            <h3>{p.name}</h3>
+            <p>💰 Price: ₹{p.price}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default App;
+
+✅ Run both servers:
+
+1️⃣ In one terminal:
+
+cd backend
+node server.js
+
+
+2️⃣ In another terminal:
+
+cd frontend
+npm start
+
+
+Now open 👉 http://localhost:3000
