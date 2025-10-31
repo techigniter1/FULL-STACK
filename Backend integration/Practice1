@@ -1,0 +1,86 @@
+1. Setup
+mkdir practice1-backend
+cd practice1-backend
+npm init -y
+npm install express
+
+2. Create server.js
+const express = require('express');
+const app = express();
+const PORT = 5000;
+
+// ------------------ Logger Middleware ------------------
+const logger = (req, res, next) => {
+    const now = new Date();
+    console.log(`[${now.toISOString()}] ${req.method} ${req.url}`);
+    next(); // proceed to the next middleware/route
+};
+
+// Apply logger globally
+app.use(logger);
+
+// ------------------ Auth Middleware ------------------
+const authMiddleware = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+
+    if (!authHeader) {
+        return res.status(401).json({ message: 'Authorization header missing' });
+    }
+
+    const token = authHeader.split(' ')[1]; // Expect "Bearer mysecrettoken"
+
+    if (token !== 'mysecrettoken') {
+        return res.status(403).json({ message: 'Invalid token' });
+    }
+
+    next(); // token valid, proceed
+};
+
+// ------------------ Routes ------------------
+
+// Public route (no auth required)
+app.get('/public', (req, res) => {
+    res.json({ message: 'This is a public route. Accessible by anyone.' });
+});
+
+// Protected route (auth required)
+app.get('/protected', authMiddleware, (req, res) => {
+    res.json({ message: 'This is a protected route. You have the correct token!' });
+});
+
+// Start server
+app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+});
+
+3. How to Test
+Public Route (no token needed)
+curl http://localhost:5000/public
+
+
+Response:
+
+{ "message": "This is a public route. Accessible by anyone." }
+
+Protected Route (with valid token)
+curl -H "Authorization: Bearer mysecrettoken" http://localhost:5000/protected
+
+
+Response:
+
+{ "message": "This is a protected route. You have the correct token!" }
+
+Protected Route (missing/invalid token)
+curl http://localhost:5000/protected
+
+
+Response:
+
+{ "message": "Authorization header missing" }
+
+curl -H "Authorization: Bearer wrongtoken" http://localhost:5000/protected
+
+
+Response:
+
+{ "message": "Invalid token" }
