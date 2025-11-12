@@ -1,0 +1,64 @@
+name: CI/CD Pipeline
+
+# Trigger the workflow on pushes and PRs to main
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout repository
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: npm install
+
+      # Step 4: Run tests
+      - name: Run tests
+        run: npm test -- --watchAll=false
+
+      # Step 5: Build the project
+      - name: Build project
+        run: npm run build
+
+      # Step 6: Upload build artifacts
+      - name: Upload production build
+        uses: actions/upload-artifact@v4
+        with:
+          name: react-build
+          path: build/
+
+  # Optional Deployment Job
+  deploy:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: react-build
+          path: build
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build
