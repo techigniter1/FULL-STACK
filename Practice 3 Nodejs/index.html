@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Seat Booking System</title>
+</head>
+<body>
+  <h1>Concurrent Ticket Booking System</h1>
+  <button onclick="getSeats()">View Seats</button>
+  <br><br>
+  <input type="number" id="seatId" placeholder="Seat ID">
+  <button onclick="lockSeat()">Lock</button>
+  <button onclick="confirmSeat()">Confirm</button>
+  <pre id="output"></pre>
+
+  <script>
+    const API = "http://localhost:3000";
+
+    async function getSeats() {
+      const res = await fetch(`${API}/seats`);
+      const data = await res.json();
+      document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function lockSeat() {
+      const id = document.getElementById('seatId').value;
+      const res = await fetch(`${API}/lock/${id}`, { method: 'POST' });
+      const data = await res.json();
+      document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function confirmSeat() {
+      const id = document.getElementById('seatId').value;
+      const res = await fetch(`${API}/confirm/${id}`, { method: 'POST' });
+      const data = await res.json();
+      document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+    }
+  </script>
+</body>
+</html>
